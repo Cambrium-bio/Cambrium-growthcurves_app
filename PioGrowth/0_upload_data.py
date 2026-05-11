@@ -269,9 +269,10 @@ with st.container(border=True):
         #  = od_adjustment_upload.getvalue())
         st.session_state["od_adjustment_upload_name"] = od_adjustment_upload.name
     if turbidostat_meta_upload is not None:
-        # st.session_state["turbidostat_meta_upload_bytes"] = (
-        #     turbidostat_meta_upload.getvalue()
-        # )
+        # file is only processed in 2_turbidostat.py
+        st.session_state["turbidostat_meta_upload_bytes"] = (
+            turbidostat_meta_upload.getvalue()
+        )
         st.session_state["turbidostat_meta_upload_name"] = turbidostat_meta_upload.name
 
 # Step 3: Configure preprocessing options
