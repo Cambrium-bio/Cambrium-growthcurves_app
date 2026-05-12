@@ -319,7 +319,8 @@ def ui_key_inspector(
 
         if isinstance(val, pd.DataFrame):
             st.write(
-                f"**DataFrame** — shape `{val.shape}`, columns: `{val.dtypes.to_dict()}`"
+                f"**DataFrame** — shape `{val.shape}`, "
+                f"columns: `{val.dtypes.to_dict()}`"
             )
             st.dataframe(val, use_container_width=True)
         elif isinstance(val, list):
