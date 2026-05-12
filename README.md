@@ -71,7 +71,7 @@ bump-my-version bump patch --config-file .bumpversion-microgrowth.toml
 
 Growthcurves, AutoGrowth and the MicroGrowth app were developed in parallel. The 
 growthcurves package severes as the backend for both apps, and the apps were developed 
-and aligned to feature similar design.
+and aligned to feature a similar design.
 
 The joint app combining three Shiny apps for PioReactor tools was started as the
 three individual apps mentioned above using shiny, but never completed. You can find the
