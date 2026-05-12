@@ -69,16 +69,11 @@ extend-select = ["E", "W", "F", "B"]
 
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools>=64", "setuptools_scm>=8"]
+requires = ["setuptools>=64","poetry-setuptools-scm-plugin", "setuptools_scm>=8"]
 
 [tool.setuptools_scm]
 # https://setuptools-scm.readthedocs.io/ 
 # used to pick up the version from the git tags or the latest commit.
-
-[tool.poetry]
-# ensure that poetry is not used on streamlit cloud. do not require a version
-# https://python-poetry.org/docs/basic-usage/#operating-modes
-package-mode = false
 
 [tool.isort]
 profile = "black"
