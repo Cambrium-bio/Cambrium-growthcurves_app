@@ -150,8 +150,6 @@ if df_wide_raw_od_data is not None and masked is not None:
             st.warning("Using different y-axis scale for each reactor.")
 
         df_plot = df_wide_raw_od_data
-        # ! for restored sessions where it may be loaded as float
-        masked = masked.astype(bool)  # convert to boolean for plotting
         mask_plot = masked
         if use_elapsed_time:
             df_plot = growthcurve_app.reindex_w_relative_time(
@@ -294,43 +292,3 @@ if df_rolling is not None:
             disabled=False,
             mime="text/csv",
         )
-
-        # ! removing this plot for now
-        # if not use_elapsed_time and start_time is not None:
-        #     view = df_rolling.copy()
-        #     view.index = start_time + pd.to_timedelta(view.index, unit="h")
-        # else:
-        #     view = df_rolling
-
-        # ax = view.plot.line(style=".", ms=2)
-        # st.write(ax.get_figure())
-
-# ! This was moved to the place in the main page, not sidebar. Can be reverted.
-# Download buttons in sidebar
-# if st.session_state.get("df_raw_od_data") is not None:
-#     download_data_button_in_sidebar(
-#         "df_raw_od_data",
-#         "Download raw data  \n(long format)",
-#         file_name="data_long_rounded_timestamps.csv",
-#     )
-
-# if st.session_state.get("df_wide_raw_od_data") is not None:
-#     download_data_button_in_sidebar(
-#         "df_wide_raw_od_data",
-#         "Download raw data  \n(wide format)",
-#         file_name="data_wide_rounded_timestamps.csv",
-#     )
-
-# if st.session_state.get("df_wide_raw_od_data_filtered") is not None:
-#     download_data_button_in_sidebar(
-#         "df_wide_raw_od_data_filtered",
-#         "Download filtered data",
-#         file_name="filtered_data_wide_rounded_timestamps.csv",
-#     )
-
-# if df_rolling is not None:
-#     download_data_button_in_sidebar(
-#         "df_rolling",
-#         "Download rolling median data",
-#         file_name="rolling_median_on_filtered_wide_data_with_rounded_timestamps.csv",
-#     )

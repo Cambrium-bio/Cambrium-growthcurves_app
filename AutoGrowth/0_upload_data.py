@@ -729,7 +729,7 @@ if button_pressed:
                 mask_outliers
             )
 
-    masked = masked.convert_dtypes()
+    masked = masked.fillna(False).astype(bool)
 
     st.session_state["df_wide_raw_od_data_filtered"] = df_wide_raw_od_data_filtered
     st.session_state["masked"] = masked
