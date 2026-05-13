@@ -1,7 +1,11 @@
 import growthcurves as gc
 import pandas as pd
 import streamlit as st
-from process_data import process_od_pioreactor
+from process_data import (
+    REQUIRED_COLUMNS,
+    REQUIRED_COLUMNS_NAME_MAP,
+    process_od_pioreactor,
+)
 from ui_components import page_header_with_help
 
 import growthcurve_app
@@ -91,23 +95,6 @@ def apply_linear_adjustments(
     return adjusted, warnings
 
 
-REQUIRED_COLUMNS = {
-    "PioReactor": ["timestamp_localtime", "pioreactor_unit", "od_reading"],
-    "Chi.Bio": ["timestamp", "reactor", "od"],
-}
-
-REQUIRED_COLUMNS_NAME_MAP = {
-    "PioReactor": {
-        "timestamp_localtime": "timestamp",
-        "pioreactor_unit": "reactor",
-        "od_reading": "od_reading",
-    },
-    "Chi.Bio": {
-        "exp_time": "elapsed_time",
-        "reactor": "reactor",
-        "exp_time": "od_reading",
-    },
-}
 
 
 ########################################################################################
@@ -127,10 +114,11 @@ with st.container(border=True):
             st.markdown("**Expected structure:**")
             st.markdown("- CSV/TXT file readable by `pandas.read_csv`")
             st.markdown(
-                "- Required columns (PioReactor): "
+                "- Required columns in combined file for PioReactor: "
                 f"{', '.join(f'`{col}`' for col in REQUIRED_COLUMNS['PioReactor'])}.\n"
-                "  - Required columns (Chi.Bio): "
-                f"{', '.join(f'`{col}`' for col in REQUIRED_COLUMNS['Chi.Bio'])}.\n"
+                "  - Required columns in each file per reactor Chi.Bio: "
+                f"{', '.join(f'`{col}`' for col in REQUIRED_COLUMNS['Chi.Bio'])}"
+                " (reactor name will be the file name).\n"
             )
             st.markdown("- One row per measurement")
             st.markdown("\n > Export from PioReactor WebApp or CLI.")

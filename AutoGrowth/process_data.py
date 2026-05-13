@@ -3,6 +3,24 @@ import streamlit as st
 import growthcurve_app
 import growthcurve_app.load
 
+REQUIRED_COLUMNS = {
+    "PioReactor": ["timestamp_localtime", "pioreactor_unit", "od_reading"],
+    "Chi.Bio": ["exp_time", "od_measured"],
+}
+
+REQUIRED_COLUMNS_NAME_MAP = {
+    "PioReactor": {
+        # "timestamp_localtime": "timestamp",
+        "pioreactor_unit": "reactor",
+        "od_reading": "od_reading",
+    },
+    "Chi.Bio": {
+        "exp_time": "elapsed_time",
+        # "reactor": "reactor", # is added by processing function
+        "od_measured": "od_reading",
+    },
+}
+
 
 def read_pioreactor_csv(file: str, round_time: int = 60):
     """Read raw OD data from a PioReactor export CSV file and round timestamps."""
