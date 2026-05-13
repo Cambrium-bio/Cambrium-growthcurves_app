@@ -338,7 +338,7 @@ with st.container(border=True):
             )
         else:
             available_reactors = sorted(
-                df_raw_od_data["pioreactor_unit"].dropna().astype(str).unique().tolist()
+                df_raw_od_data["reactor"].dropna().astype(str).unique().tolist()
             )
             reactors_selected = st.multiselect(
                 "Select reactors to include in analysis",
@@ -566,14 +566,15 @@ if file is not None:
         )
     elif reactor_type == "PioReactor":
         # msg is overwritten here (intended)
-        df_raw_od_data, df_wide_raw_od_data, msg, rerun = process_od_pioreactor(
+        df_raw_od_data, df_wide_raw_od_data, msg = process_od_pioreactor(
             file=file,
             round_time=round_time,
             keep_core_data=keep_core_data,
             aggregate_duplicated_rounded_timepoint=aggregate_duplicated_rounded_timepoint,
             aggregate_duplicated_rounded_timepoint_method=aggregate_duplicated_rounded_timepoint_method,
         )
-
+    rerun = st.session_state.get("df_raw_od_data") is None
+    st.session_state["df_raw_od_data"] = df_raw_od_data
     st.session_state["df_wide_raw_od_data"] = df_wide_raw_od_data
     st.session_state["upload_processing_summary_msg"] = msg  # ? is it needed
     if rerun:
@@ -588,7 +589,7 @@ if button_pressed:
         st.stop()
     st.write(f"Reactors included in analysis: {reactors_selected}")
     df_raw_od_data = df_raw_od_data.loc[
-        df_raw_od_data["pioreactor_unit"].astype(str).isin(reactors_selected)
+        df_raw_od_data["reactor"].astype(str).isin(reactors_selected)
     ]
 
     # initalize masked here
