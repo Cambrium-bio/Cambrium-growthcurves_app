@@ -1,7 +1,5 @@
+import pandas as pd
 import streamlit as st
-
-import growthcurve_app
-import growthcurve_app.load
 
 REQUIRED_COLUMNS = {
     "PioReactor": ["timestamp_localtime", "pioreactor_unit", "od_reading"],
@@ -16,15 +14,28 @@ REQUIRED_COLUMNS_NAME_MAP = {
     },
     "Chi.Bio": {
         "exp_time": "elapsed_time",
-        # "reactor": "reactor", # is added by processing function
+        "reactor": "reactor",  # is added by processing function
         "od_measured": "od_reading",
     },
 }
 
 
+# specify datecolumns for now
+COLUMN_TYPES_PIO: dict = {
+    # need to be callable
+    "timestamp_localtime": pd.Timestamp,
+    #  'experiment': str,
+    #  'pioreactor_unit': str,
+    "timestamp": pd.Timestamp,
+    # "od_reading": float,
+    # "angle": float,
+    # "channel": float,
+}
+
+
 def read_pioreactor_csv(file: str, round_time: int = 60):
     """Read raw OD data from a PioReactor export CSV file and round timestamps."""
-    df_raw_od_data = growthcurve_app.load.read_csv(file)
+    df_raw_od_data = pd.read_csv(file, converters=COLUMN_TYPES_PIO).convert_dtypes()
 
     # ! add check that required columns are in data and have correct dtypes (pandera)
     msg = (
@@ -43,13 +54,15 @@ def read_pioreactor_csv(file: str, round_time: int = 60):
 
 
 def drop_na_pioreactor_raw_od_data(df_raw_od_data):
+
+def drop_na_pioreactor_raw_od_data(
+    df_raw_od_data, subset=["timestamp_rounded", "pioreactor_unit", "od_reading"]
+):
     """Drop rows with NA values in core columns and return the number of dropped
     rows.
     """
     N_before = df_raw_od_data.shape[0]
-    df_raw_od_data = df_raw_od_data.dropna(
-        subset=["timestamp_rounded", "pioreactor_unit", "od_reading"]
-    )
+    df_raw_od_data = df_raw_od_data.dropna(subset=subset)
     N_after = df_raw_od_data.shape[0]
     N_dropped = N_before - N_after
     return df_raw_od_data, N_dropped
