@@ -557,7 +557,7 @@ msg = st.session_state.get("upload_processing_summary_msg", "")
 
 # File Uploaded ########################################################################
 # this runs wheather the button is pressed or not, but only if a file is uploaded
-if file is not None:
+if file:
     # Chi.Bio: One or more files are processed
     # PioReactor: one file is processed
     if reactor_type == "Chi.Bio":
