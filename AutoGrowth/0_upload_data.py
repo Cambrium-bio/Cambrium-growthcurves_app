@@ -563,6 +563,7 @@ if file is not None:
         df_raw_od_data, df_wide_raw_od_data, msg = process_chibio_data(
             files=file,
             round_time=round_time,
+            keep_core_data=keep_core_data,
         )
     elif reactor_type == "PioReactor":
         # msg is overwritten here (intended)

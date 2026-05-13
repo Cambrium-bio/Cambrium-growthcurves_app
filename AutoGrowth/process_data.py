@@ -81,13 +81,25 @@ def drop_na_pioreactor_raw_od_data(
 
 
 def process_chibio_data(
-    files: list[Path], round_time: int = 60
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+    files: list[Path],
+    round_time: int = 60,
+    keep_core_data: bool = True,
+) -> tuple[pd.DataFrame, pd.DataFrame, str]:
     df, msg = read_chibio_csv(files, round_time)
     df, N_dropped = drop_na_pioreactor_raw_od_data(
         df, subset=REQUIRED_COLUMNS["Chi.Bio"]
     )
     msg += f"- Dropped {N_dropped:,d} rows with NA values.\n"
+    if keep_core_data:
+        # core data and added reactor column only
+        df = df[
+            [
+                "exp_time",
+                "exp_time_rounded",
+                "reactor",
+                "od_measured",
+            ]
+        ]
     df_wide = df.pivot(
         index="exp_time_rounded", columns="reactor", values="od_measured"
     )
@@ -143,7 +155,6 @@ def process_od_pioreactor(
     ).dt.total_seconds()
     msg += f"- Added elapsed time in seconds since start ({start_time}).\n"
     st.session_state["round_time"] = round_time
-    rerun = st.session_state.get("df_raw_od_data") is None
     # only keep core data?
     if keep_core_data:
         try:
