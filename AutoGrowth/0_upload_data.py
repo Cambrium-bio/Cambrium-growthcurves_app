@@ -95,9 +95,7 @@ def apply_linear_adjustments(
 
     return adjusted, warnings
 
-
-
-
+# region: UI components for upload page
 ########################################################################################
 # Session State Restore
 render_restore_session_state_ui()
@@ -514,6 +512,7 @@ with st.container(border=True):
         button_pressed = st.form_submit_button(
             "Apply options to uploaded data", type="primary", width="stretch"
         )
+# endregion
 
 ### save form state
 # remember form values for next time page is opened
@@ -538,6 +537,7 @@ st.session_state["aggregate_duplicated_rounded_timepoint_method"] = (
     aggregate_duplicated_rounded_timepoint_method
 )
 
+# region: Process files
 ########################################################################################
 # Process data
 
@@ -756,7 +756,9 @@ if button_pressed:
     st.write("### Data processing summary:")
     st.write(msg)
 
+# endregion
 
+# region: Debugging and inspection
 # Debug option to inspect session state variables related to data upload and processing
 if st.session_state.get("debug_mode", False):
     with st.expander("Developer inspect (session state)", expanded=False):
@@ -792,3 +794,4 @@ if st.session_state.get("debug_mode", False):
                 "Wide raw OD data:",
                 st.session_state["df_wide_raw_od_data"],
             )
+# endregion
