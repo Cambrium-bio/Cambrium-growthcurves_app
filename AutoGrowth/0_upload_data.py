@@ -599,9 +599,11 @@ if button_pressed:
         index=df_wide_raw_od_data.index,
         columns=df_wide_raw_od_data.columns,
     )
+    # df_wide_raw_od_data_filtered will now be used
     df_wide_raw_od_data_filtered = df_wide_raw_od_data.copy()
 
     #### Apply Data Filtering options ##################################################
+    # all to df_wide_raw_od_data_filtered
     # Handle negative values
     n_negative = (df_wide_raw_od_data_filtered < 0).sum().sum()
     if n_negative > 0:
@@ -736,23 +738,15 @@ if button_pressed:
             msg += f"    - {warning}\n"
 
     #### switch wide data to time eplased in hours #####################################
-    df_rolling = growthcurve_app.reindex_w_relative_time(
+    if reactor_type == "PioReactor":
+        df_rolling = growthcurve_app.reindex_w_relative_time(
         df=df_rolling,
         start_time=st.session_state["start_time"],
-    )
+        )
     st.session_state["df_rolling"] = df_rolling
 
     st.session_state["rolling_window"] = int(rolling_window)
 
-    df_time_map = (
-        df_raw_od_data[["timestamp_rounded", "elapsed_time_in_seconds"]]
-        .drop_duplicates()
-        .set_index("timestamp_rounded")
-    )
-    df_time_map["elapsed_time_in_hours"] = (
-        df_time_map["elapsed_time_in_seconds"] / 3600.0
-    )
-    st.session_state["df_time_map"] = df_time_map
     st.session_state["upload_processing_summary_msg"] = msg
     st.write("### Data processing summary:")
     st.write(msg)
