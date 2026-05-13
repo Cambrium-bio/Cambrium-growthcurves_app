@@ -4,6 +4,7 @@ import streamlit as st
 from process_data import (
     REQUIRED_COLUMNS,
     REQUIRED_COLUMNS_NAME_MAP,
+    process_chibio_data,
     process_od_pioreactor,
 )
 from ui_components import page_header_with_help
@@ -558,8 +559,11 @@ if file is not None:
     # Chi.Bio: One or more files are processed
     # PioReactor: one file is processed
     if reactor_type == "Chi.Bio":
-        st.error("Processing of multiple files for Chi.Bio data is not yet implemented")
-        st.stop()
+        # msg is overwritten here (intended)
+        df_raw_od_data, df_wide_raw_od_data, msg = process_chibio_data(
+            files=file,
+            round_time=round_time,
+        )
     elif reactor_type == "PioReactor":
         # msg is overwritten here (intended)
         df_raw_od_data, df_wide_raw_od_data, msg, rerun = process_od_pioreactor(

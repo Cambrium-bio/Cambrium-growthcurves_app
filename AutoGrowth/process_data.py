@@ -53,7 +53,19 @@ def read_pioreactor_csv(file: str, round_time: int = 60):
     return df_raw_od_data, msg
 
 
-def drop_na_pioreactor_raw_od_data(df_raw_od_data):
+def read_chibio_csv(files: list[Path], round_time: int = 60) -> pd.DataFrame:
+    dfs = []
+    for file in files:
+        df = pd.read_csv(file)
+        df["reactor"] = file.name
+        dfs.append(df)
+    df = pd.concat(dfs, ignore_index=True)
+    df["exp_time_rounded"] = (df["exp_time"] / round_time).round().astype(
+        int
+    ) * round_time
+    msg = f"- Loaded {df.shape[0]:,d} rows " f"and {df.shape[1]:,d} columns.\n"
+    return df, msg
+
 
 def drop_na_pioreactor_raw_od_data(
     df_raw_od_data, subset=["timestamp_rounded", "pioreactor_unit", "od_reading"]
@@ -66,6 +78,20 @@ def drop_na_pioreactor_raw_od_data(
     N_after = df_raw_od_data.shape[0]
     N_dropped = N_before - N_after
     return df_raw_od_data, N_dropped
+
+
+def process_chibio_data(
+    files: list[Path], round_time: int = 60
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    df, msg = read_chibio_csv(files, round_time)
+    df, N_dropped = drop_na_pioreactor_raw_od_data(
+        df, subset=REQUIRED_COLUMNS["Chi.Bio"]
+    )
+    msg += f"- Dropped {N_dropped:,d} rows with NA values.\n"
+    df_wide = df.pivot(
+        index="exp_time_rounded", columns="reactor", values="od_measured"
+    )
+    return df, df_wide, msg
 
 
 def process_od_pioreactor(
