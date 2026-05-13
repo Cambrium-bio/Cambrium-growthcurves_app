@@ -239,12 +239,13 @@ with st.container(border=True):
             key="upload_page_od_adjustment_table",
         )
     with optional_upload_cols[1]:
-        st.markdown("**Turbidostat Metadata**")
+        st.markdown("**Turbidostat Metadata** (for PioReactor datasets only)")
         # help message
         with st.popover("See an Example", width="stretch"):
             st.markdown("**Turbidostat Metadata**")
             st.markdown("""
-                If provided, peaks are not autodetected.
+                If provided, peaks are not autodetected. Only available for 
+                PioReactor datasets.
 
                 - CSV file with columns `timestamp_localtime`, `pioreactor_unit`,
                 `event_name` and `message` and `data`.
@@ -279,6 +280,7 @@ with st.container(border=True):
             "Dilution metadata (for Turbidostat page)",
             type=["csv"],
             key="upload_page_turbidostat_meta",
+            disabled=reactor_type != "PioReactor",
         )
         st.session_state.setdefault("turbidostat_timestamp_col", "timestamp_localtime")
         st.session_state.setdefault("turbidostat_reactor_col", "pioreactor_unit")
