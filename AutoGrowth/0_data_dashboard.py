@@ -3,7 +3,7 @@ from buttons import create_download_button
 from plots import create_figure_bytes_to_download, plot_growth_data_w_mask
 from ui_components import page_header_with_help, show_warning_to_upload_data
 
-import piogrowth
+import growthcurve_app
 
 DATA_DASHBOARD_HELP = """
 Review processed upload outputs in one place:
@@ -152,11 +152,11 @@ if df_wide_raw_od_data is not None and masked is not None:
         df_plot = df_wide_raw_od_data
         mask_plot = masked
         if use_elapsed_time:
-            df_plot = piogrowth.reindex_w_relative_time(
+            df_plot = growthcurve_app.reindex_w_relative_time(
                 df=df_plot,
                 start_time=start_time,
             )
-            mask_plot = piogrowth.reindex_w_relative_time(
+            mask_plot = growthcurve_app.reindex_w_relative_time(
                 df=mask_plot,
                 start_time=start_time,
             )
@@ -292,43 +292,3 @@ if df_rolling is not None:
             disabled=False,
             mime="text/csv",
         )
-
-        # ! removing this plot for now
-        # if not use_elapsed_time and start_time is not None:
-        #     view = df_rolling.copy()
-        #     view.index = start_time + pd.to_timedelta(view.index, unit="h")
-        # else:
-        #     view = df_rolling
-
-        # ax = view.plot.line(style=".", ms=2)
-        # st.write(ax.get_figure())
-
-# ! This was moved to the place in the main page, not sidebar. Can be reverted.
-# Download buttons in sidebar
-# if st.session_state.get("df_raw_od_data") is not None:
-#     download_data_button_in_sidebar(
-#         "df_raw_od_data",
-#         "Download raw data  \n(long format)",
-#         file_name="data_long_rounded_timestamps.csv",
-#     )
-
-# if st.session_state.get("df_wide_raw_od_data") is not None:
-#     download_data_button_in_sidebar(
-#         "df_wide_raw_od_data",
-#         "Download raw data  \n(wide format)",
-#         file_name="data_wide_rounded_timestamps.csv",
-#     )
-
-# if st.session_state.get("df_wide_raw_od_data_filtered") is not None:
-#     download_data_button_in_sidebar(
-#         "df_wide_raw_od_data_filtered",
-#         "Download filtered data",
-#         file_name="filtered_data_wide_rounded_timestamps.csv",
-#     )
-
-# if df_rolling is not None:
-#     download_data_button_in_sidebar(
-#         "df_rolling",
-#         "Download rolling median data",
-#         file_name="rolling_median_on_filtered_wide_data_with_rounded_timestamps.csv",
-#     )
