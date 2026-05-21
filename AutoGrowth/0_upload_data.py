@@ -562,6 +562,40 @@ if file:
     # Chi.Bio: One or more files are processed
     # PioReactor: one file is processed
     if reactor_type == "Chi.Bio":
+        missing_files = []
+        for uploaded_file in file:
+            try:
+                columns = pd.read_csv(uploaded_file, nrows=0).columns.tolist()
+                uploaded_file.seek(0)
+            except (OSError, pd.errors.ParserError, ValueError):
+                continue
+            missing = [
+                column
+                for column in REQUIRED_COLUMNS[reactor_type]
+                if column not in columns
+            ]
+            if missing:
+                missing_files.append((uploaded_file.name, missing, columns))
+
+        if missing_files:
+            _, _, columns = missing_files[0]
+            other_type = "PioReactor"
+            other_required = REQUIRED_COLUMNS[other_type]
+            wrong_type_hint = (
+                f" The files look like **{other_type}** input — did you select the wrong reactor type?"
+                if not any(column not in columns for column in other_required)
+                else ""
+            )
+            details = ", ".join(
+                f"`{name}` is missing {', '.join(f'`{col}`' for col in missing)}"
+                for name, missing, _ in missing_files
+            )
+            st.error(
+                f"One or more uploaded files are missing required columns for **{reactor_type}**. "
+                f"{details}." + wrong_type_hint
+            )
+            st.stop()
+
         # msg is overwritten here (intended)
         df_raw_od_data, df_wide_raw_od_data, msg = process_chibio_data(
             files=file,
@@ -569,6 +603,30 @@ if file:
             keep_core_data=keep_core_data,
         )
     elif reactor_type == "PioReactor":
+        try:
+            columns = pd.read_csv(file, nrows=0).columns.tolist()
+            file.seek(0)
+        except (OSError, pd.errors.ParserError, ValueError):
+            columns = []
+
+        missing = [
+            column for column in REQUIRED_COLUMNS[reactor_type] if column not in columns
+        ]
+        if missing:
+            other_type = "Chi.Bio"
+            other_required = REQUIRED_COLUMNS[other_type]
+            wrong_type_hint = (
+                f" The file looks like **{other_type}** input — did you select the wrong reactor type?"
+                if columns
+                and not any(column not in columns for column in other_required)
+                else ""
+            )
+            st.error(
+                f"The uploaded file is missing required columns for **{reactor_type}**: "
+                f"{', '.join((f'`{col}`' for col in missing))}." + wrong_type_hint
+            )
+            st.stop()
+
         # msg is overwritten here (intended)
         df_raw_od_data, df_wide_raw_od_data, msg = process_od_pioreactor(
             file=file,
@@ -577,6 +635,7 @@ if file:
             aggregate_duplicated_rounded_timepoint=aggregate_duplicated_rounded_timepoint,
             aggregate_duplicated_rounded_timepoint_method=aggregate_duplicated_rounded_timepoint_method,
         )
+
     rerun = st.session_state.get("df_raw_od_data") is None
     st.session_state["df_raw_od_data"] = df_raw_od_data
     st.session_state["df_wide_raw_od_data"] = df_wide_raw_od_data
