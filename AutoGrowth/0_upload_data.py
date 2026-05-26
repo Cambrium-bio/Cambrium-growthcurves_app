@@ -404,7 +404,10 @@ with st.container(border=True):
                     "- `IQR`: remove outliers using Inter-Quartile Range in a rolling "
                     "window of timepoints.\n"
                     "- `ECOD`: remove outliers using the ECOD algorithm "
-                    "(Empirical Cumulative distribution-based Outlier Detection)."
+                    "(Empirical Cumulative distribution-based Outlier Detection).\n"
+                    "> If there are missing values and ECOD is selected, you need to "
+                    "activate imputation so IQR outlier removal and imputation can "
+                    "be run before running ECOD."
                 ),
             )
         with filter_columns[1]:
@@ -681,13 +684,7 @@ if button_pressed:
                 " before applying ECOD outlier detection."
             )
             st.stop()
-        if mask_na.sum().sum() > 0:
-            msg += "Warning: ECOD outlier detection does not work with missing values. "
-            msg += "Filling missing values before applying ECOD outlier detection.\n"
-            msg += f"- Filling {mask_na.sum().sum():,d} missing OD readings.\n"
-            msg += f"   - in detail: {mask_na.sum().to_dict()}\n"
-            # ! should I visualize the values differently?
-            df_wide_raw_od_data_filtered = df_wide_raw_od_data_filtered.ffill().bfill()
+
 
     # outlier detection using IQR on rolling window: sets for center value of window a
     # true or false (this would be arguing maybe for long data format)
@@ -695,26 +692,49 @@ if button_pressed:
     # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.rolling.html
     print(f"Applying outlier method: {outlier_method}")
     if outlier_method in ("IQR", "ECOD"):
+        kwargs_iqr = {
+            "method": "iqr",
+            "factor": iqr_range_value,
+            "window_size": rolling_window,
+        }
         kwargs = (
-            {"method": "iqr", "factor": iqr_range_value, "window_size": rolling_window}
+            kwargs_iqr
             if outlier_method == "IQR"
             else {"method": "ecod", "factor": ecod_factor}
         )
-        # ! not robust to missing values yet.
+        _has_missing = df_wide_raw_od_data_filtered.isna().sum().sum() > 0
         if (
-            df_wide_raw_od_data_filtered.isna().sum().sum() > 0
+            _has_missing
             and outlier_method == "ECOD"
         ):
-            st.error(
+            st.warning(
                 "Found missing values in the data. ECOD outlier detection does not work"
-                " with missing values. Consider setting forward and backward filling "
+                " with missing values. I will remove using IQR some outliers and then "
+                " forward and backward fill values "
                 " before applying ECOD outlier detection."
             )
-            st.stop()
         with st.spinner(f"Applying {outlier_method} outlier removal..."):
+            if outlier_method == "ECOD" and _has_missing:
+                mask_outliers = df_wide_raw_od_data_filtered.apply(
+                    gc.preprocessing.detect_outliers,
+                    raw=False,
+                    **kwargs_iqr,
+                ).astype(bool)
+                masked = masked | mask_outliers
+                n_out = mask_outliers.sum().sum()
+                msg += f"- Number of outliers detected (IQR): {n_out}\n"
+                msg += f"   - in detail: {mask_outliers.sum().to_dict()}\n"
+                df_wide_raw_od_data_filtered = df_wide_raw_od_data_filtered.mask(
+                    mask_outliers
+                )
+                df_wide_raw_od_data_filtered = (
+                    df_wide_raw_od_data_filtered.ffill().bfill()
+                )
             mask_outliers = df_wide_raw_od_data_filtered.apply(
-                gc.preprocessing.detect_outliers, raw=False, **kwargs
-            ).astype(bool)
+                    gc.preprocessing.detect_outliers,
+                    raw=False,
+                    **kwargs,
+                ).astype(bool)
             n_out = mask_outliers.sum().sum()
             msg += f"- Number of outliers detected ({outlier_method}): {n_out}\n"
             msg += f"   - in detail: {mask_outliers.sum().to_dict()}\n"
@@ -819,7 +839,7 @@ if button_pressed:
         # should not happen
         st.error(f"Unknown reactor type: {reactor_type}")
         st.stop()
-        
+
     st.session_state["df_rolling"] = df_rolling
 
     st.session_state["rolling_window"] = int(rolling_window)
