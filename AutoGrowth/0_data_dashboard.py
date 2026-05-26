@@ -165,6 +165,10 @@ if df_wide_raw_od_data is not None and masked is not None:
             "Note: Shows the raw data to highlight the filtered points before "
             "smoothing of the data is applied."
         )
+        st.warning(
+            "Moving the slider leads to permanent changes in the data "
+            "shown in the plots below."
+        )
 
         # Reset stored ranges when elapsed-time mode changes to avoid type mismatch
         _prev_use_elapsed = st.session_state.get("_dashboard_prev_use_elapsed")
@@ -205,6 +209,12 @@ if df_wide_raw_od_data is not None and masked is not None:
 
         df_plot = df_plot.loc[min_t:max_t]
         mask_plot = mask_plot.loc[min_t:max_t]
+
+        if df_rolling is not None:
+            df_rolling = df_rolling.loc[min_t:max_t]
+            st.session_state["df_rolling"] = df_rolling
+            # ! filtered dataframe is not affected.
+
 
         with st.expander("Select time window per reactor"):
             st.info("Note: Minimum and maximum for slider are reactor specific!")
@@ -279,9 +289,9 @@ if df_rolling is not None:
                 f"Rolling median in window of {rolling_window}s using filtered OD data"
             )
         else:
-            st.subheader("Rolling median using filtered OD data")
-        fig = px.line(
-            df_rolling,
+            st.subheader("Filtered raw OD data (untrimmed and not calibrated)")
+        fig = px.scatter(
+            df_wide_raw_od_data_filtered,
             x=df_wide_raw_od_data_filtered.index,
             y=df_wide_raw_od_data_filtered.columns,
             labels={"value": "OD (rolling median)", "index": "Time"},
@@ -293,7 +303,7 @@ if df_rolling is not None:
             x=df_rolling.index,
             y=df_rolling.columns,
             labels={"value": "OD (rolling median)", "index": "Time"},
-            title="Smoothed and calibrated growth curves",
+            title="Smoothed, trimmed and calibrated growth curves",
         )
         st.plotly_chart(fig)
         st.write(df_rolling)
