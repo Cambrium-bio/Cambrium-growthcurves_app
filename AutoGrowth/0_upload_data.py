@@ -685,7 +685,6 @@ if button_pressed:
             )
             st.stop()
 
-
     # outlier detection using IQR on rolling window: sets for center value of window a
     # true or false (this would be arguing maybe for long data format)
     # can be used in plot for visualization
@@ -703,10 +702,7 @@ if button_pressed:
             else {"method": "ecod", "factor": ecod_factor}
         )
         _has_missing = df_wide_raw_od_data_filtered.isna().sum().sum() > 0
-        if (
-            _has_missing
-            and outlier_method == "ECOD"
-        ):
+        if _has_missing and outlier_method == "ECOD":
             st.warning(
                 "Found missing values in the data. ECOD outlier detection does not work"
                 " with missing values. I will remove using IQR some outliers and then "
@@ -731,10 +727,10 @@ if button_pressed:
                     df_wide_raw_od_data_filtered.ffill().bfill()
                 )
             mask_outliers = df_wide_raw_od_data_filtered.apply(
-                    gc.preprocessing.detect_outliers,
-                    raw=False,
-                    **kwargs,
-                ).astype(bool)
+                gc.preprocessing.detect_outliers,
+                raw=False,
+                **kwargs,
+            ).astype(bool)
             n_out = mask_outliers.sum().sum()
             msg += f"- Number of outliers detected ({outlier_method}): {n_out}\n"
             msg += f"   - in detail: {mask_outliers.sum().to_dict()}\n"

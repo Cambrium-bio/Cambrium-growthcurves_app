@@ -215,7 +215,6 @@ if df_wide_raw_od_data is not None and masked is not None:
             st.session_state["df_rolling"] = df_rolling
             # ! filtered dataframe is not affected.
 
-
         with st.expander("Select time window per reactor"):
             st.info("Note: Minimum and maximum for slider are reactor specific!")
             dashboard_time_ranges = st.session_state.get("dashboard_time_ranges", {})
