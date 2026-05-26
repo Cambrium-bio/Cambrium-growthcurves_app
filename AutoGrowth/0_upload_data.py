@@ -876,4 +876,9 @@ if st.session_state.get("debug_mode", False):
                 "Rolling OD data:",
                 st.session_state["df_rolling"],
             )
+        if st.session_state.get("df_od_adjustment") is not None:
+            st.write(
+                "OD adjustment table:",
+                st.session_state["df_od_adjustment"],
+            )
 # endregion
