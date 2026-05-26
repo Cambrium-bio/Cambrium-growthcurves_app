@@ -1,3 +1,4 @@
+import plotly.express as px
 import streamlit as st
 from buttons import create_download_button
 from plots import create_figure_bytes_to_download, plot_growth_data_w_mask
@@ -154,11 +155,15 @@ if df_wide_raw_od_data is not None and masked is not None:
 
         # Time window filtering
         st.divider()
-        st.write("#### Time window filtering:")
-        st.caption(
+        st.write("#### Time window filtering (Raw data view):")
+        st.write(
             "Select time windows to display. Data outside the selected windows "
             "will not appear in plots. Use the Upload Data page to re-process "
             "with different options."
+        )
+        st.info(
+            "Note: Shows the raw data to highlight the filtered points before "
+            "smoothing of the data is applied."
         )
 
         # Reset stored ranges when elapsed-time mode changes to avoid type mismatch
@@ -268,13 +273,29 @@ if processing_summary:
 # show rolling median table
 if df_rolling is not None:
     with st.container(border=True):
-        st.header("Rolling Median")
+        st.header("Smoothed data view.")
         if rolling_window is not None:
             st.subheader(
                 f"Rolling median in window of {rolling_window}s using filtered OD data"
             )
         else:
             st.subheader("Rolling median using filtered OD data")
+        fig = px.line(
+            df_rolling,
+            x=df_wide_raw_od_data_filtered.index,
+            y=df_wide_raw_od_data_filtered.columns,
+            labels={"value": "OD (rolling median)", "index": "Time"},
+            title="Filtered raw data.",
+        )
+        st.plotly_chart(fig)
+        fig = px.line(
+            df_rolling,
+            x=df_rolling.index,
+            y=df_rolling.columns,
+            labels={"value": "OD (rolling median)", "index": "Time"},
+            title="Smoothed and calibrated growth curves",
+        )
+        st.plotly_chart(fig)
         st.write(df_rolling)
         create_download_button(
             data=df_rolling.to_csv(index=True).encode("utf-8"),
