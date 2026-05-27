@@ -329,7 +329,7 @@ with st.container(border=True):
 
     with st.form("Upload_data_form", clear_on_submit=False):
         st.write("#### Data filtering options:")
-        if st.session_state.get("df_raw_od_data") is None:
+        if df_wide_raw_od_data is None:
             available_reactors = []
             reactors_selected = st.multiselect(
                 "Select reactors to include in analysis",
@@ -338,16 +338,18 @@ with st.container(border=True):
                 help="Upload OD data to populate available reactors.",
             )
         else:
-            available_reactors = sorted(
-                df_raw_od_data["reactor"].dropna().astype(str).unique().tolist()
-            )
+            # ! form is only build upon rerun
+            print("df_wide_raw_od_data columns:", df_wide_raw_od_data.columns.to_list())
+            available_reactors = df_wide_raw_od_data.columns.to_list()
+            # ! once removed reactors are for now not recovered.
             reactors_selected = st.multiselect(
                 "Select reactors to include in analysis",
                 options=available_reactors,
                 default=available_reactors,
                 help=(
                     "All reactors are selected by default. Remove any reactors you do  "
-                    "not want analyzed."
+                    "not want analyzed. Once removed, they cannot be recovered without "
+                    "re-uploading the data."
                 ),
             )
         filter_columns = st.columns(2)
@@ -513,7 +515,7 @@ with st.container(border=True):
 # remember form values for next time page is opened
 st.session_state["keep_core_data"] = keep_core_data
 st.session_state["custom_id"] = custom_id
-st.session_state["reactors_selected"] = reactors_selected
+# st.session_state["reactors_selected"] = reactors_selected # moved to button pressed section
 st.session_state["remove_negative"] = remove_negative
 st.session_state["negative_handling"] = negative_handling
 st.session_state["fill_na"] = fill_na
@@ -646,7 +648,7 @@ if button_pressed:
         st.session_state.get("reactors_selected")
         and reactors_selected != st.session_state["reactors_selected"]
     ):
-        # ! If reactors changed, maybe one needs to reset the wide data
+        # ! If reactors were removed, they stay removed
         st.session_state["reactors_selected"] = reactors_selected
     msg += "reactors included in analysis: " + ", ".join(reactors_selected) + "\n"
     df_wide_raw_od_data = df_wide_raw_od_data[reactors_selected]

@@ -326,11 +326,10 @@ if use_uploaded_peak_times:
         ):
             st.info('Showing only rows with "DilutionEvent" in column "event_name".')
             st.write(df_meta)
-        unique_reactors_in_meta = df_meta["pioreactor_unit"].unique()
+        unique_reactors_in_meta = df_meta[col_reactors].unique()
         _reactors_with_dilution_events = df_rolling.columns.isin(
             unique_reactors_in_meta
         )
-        st.write(_reactors_with_dilution_events)
         if len(unique_reactors_in_meta) == 0:
             st.error(
                 "No reactors found in uploaded metadata. Please check the selected "
@@ -341,9 +340,15 @@ if use_uploaded_peak_times:
             _missing_reactors = df_rolling.columns[~_reactors_with_dilution_events]
             st.error(
                 "Dilution Events for reactors not found:"
-                f" {', '.join(_missing_reactors)}.\nPlease check the selected "
-                "reactor column and the content of the uploaded file. Exlude"
-                "reactor(s) otherwise upon preprocessing."
+                f" {', '.join(_missing_reactors)}.\n\nPlease check the selected "
+                "reactor column and the content of the uploaded file. Exlude "
+                "reactor(s) otherwise on preprocessing tab."
+            )
+            st.page_link(
+                "0_upload_data.py",
+                icon=":material/upload:",
+                label="Upload Data",
+                help="Go to upload data page.",
             )
             st.stop()
 
