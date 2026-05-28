@@ -54,10 +54,10 @@ def apply_linear_adjustments(
     required_columns = {"reactor", "od"}
     missing_columns = required_columns - set(adjustment_table.columns)
     if missing_columns:
-        return df_rolling, [
+        raise KeyError(
             "Adjustment table is missing columns: "
-            f"{', '.join(sorted(missing_columns))}."
-        ]
+            f"{', '.join(sorted(missing_columns))}.",
+        )
 
     warnings = []
     adjusted = df_rolling.copy()
@@ -329,7 +329,7 @@ with st.container(border=True):
 
     with st.form("Upload_data_form", clear_on_submit=False):
         st.write("#### Data filtering options:")
-        if st.session_state.get("df_raw_od_data") is None:
+        if df_wide_raw_od_data is None:
             available_reactors = []
             reactors_selected = st.multiselect(
                 "Select reactors to include in analysis",
@@ -338,16 +338,17 @@ with st.container(border=True):
                 help="Upload OD data to populate available reactors.",
             )
         else:
-            available_reactors = sorted(
-                df_raw_od_data["reactor"].dropna().astype(str).unique().tolist()
-            )
+            # ! form is only build upon rerun
+            available_reactors = df_wide_raw_od_data.columns.to_list()
+            # ! once removed reactors are for now not recovered.
             reactors_selected = st.multiselect(
                 "Select reactors to include in analysis",
                 options=available_reactors,
                 default=available_reactors,
                 help=(
                     "All reactors are selected by default. Remove any reactors you do  "
-                    "not want analyzed."
+                    "not want analyzed. Once removed, they cannot be recovered without "
+                    "re-uploading the data."
                 ),
             )
         filter_columns = st.columns(2)
@@ -357,7 +358,7 @@ with st.container(border=True):
                 "Impute negative values by moving average",
             ]
             default_negative = st.session_state.get(
-                "negative_handling", negative_options[1]
+                "negative_handling", negative_options[0]
             )
             try:
                 default_negative_index = negative_options.index(default_negative)
@@ -387,17 +388,6 @@ with st.container(border=True):
                 ),
                 value=st.session_state.get("fill_na", False),
             )
-            # ! move to after smoothing is applied?
-            remove_downward_trending = st.checkbox(
-                label="Remove downward trending data points (negative OD changes) "
-                " globally after smoothing the data.",
-                value=st.session_state.get("remove_downward_trending", False),
-                help=(
-                    "This can be used to remove data points that are smaller than a "
-                    "previous one. Downward trends will be removed, but the upward "
-                    "trend will be kept from a local minimum."
-                ),
-            )
             remove_max = st.checkbox(
                 "Remove maximum OD readings by quantile",
                 value=st.session_state.get("remove_max", False),
@@ -415,7 +405,10 @@ with st.container(border=True):
                     "- `IQR`: remove outliers using Inter-Quartile Range in a rolling "
                     "window of timepoints.\n"
                     "- `ECOD`: remove outliers using the ECOD algorithm "
-                    "(Empirical Cumulative distribution-based Outlier Detection)."
+                    "(Empirical Cumulative distribution-based Outlier Detection).\n"
+                    "> If there are missing values and ECOD is selected, you need to "
+                    "activate imputation so IQR outlier removal and imputation can "
+                    "be run before running ECOD."
                 ),
             )
         with filter_columns[1]:
@@ -521,11 +514,10 @@ with st.container(border=True):
 # remember form values for next time page is opened
 st.session_state["keep_core_data"] = keep_core_data
 st.session_state["custom_id"] = custom_id
-st.session_state["reactors_selected"] = reactors_selected
+# st.session_state["reactors_selected"] = reactors_selected # moved to button pressed section
 st.session_state["remove_negative"] = remove_negative
 st.session_state["negative_handling"] = negative_handling
 st.session_state["fill_na"] = fill_na
-st.session_state["remove_downward_trending"] = remove_downward_trending
 st.session_state["remove_max"] = remove_max
 st.session_state["outlier_method"] = outlier_method
 st.session_state["quantile_max"] = quantile_max
@@ -651,9 +643,15 @@ if button_pressed:
         st.warning("No reactors selected. Select at least one reactor to continue.")
         st.stop()
     st.write(f"Reactors included in analysis: {reactors_selected}")
-    df_raw_od_data = df_raw_od_data.loc[
-        df_raw_od_data["reactor"].astype(str).isin(reactors_selected)
-    ]
+    if (
+        st.session_state.get("reactors_selected")
+        and reactors_selected != st.session_state["reactors_selected"]
+    ):
+        # ! If reactors were removed, they stay removed
+        st.session_state["reactors_selected"] = reactors_selected
+    msg += "reactors included in analysis: " + ", ".join(reactors_selected) + "\n"
+    df_wide_raw_od_data = df_wide_raw_od_data[reactors_selected]
+    st.session_state["df_wide_raw_od_data"] = df_wide_raw_od_data
 
     # initalize masked here
     masked = pd.DataFrame(
@@ -664,8 +662,89 @@ if button_pressed:
     # df_wide_raw_od_data_filtered will now be used
     df_wide_raw_od_data_filtered = df_wide_raw_od_data.copy()
 
+    msg += "Applied data filtering options:\n"
+
     #### Apply Data Filtering options ##################################################
     # all to df_wide_raw_od_data_filtered
+
+    # remove quantiles
+    if remove_max:
+        mask_extreme_values = (
+            df_wide_raw_od_data_filtered
+            > df_wide_raw_od_data_filtered.quantile(quantile_max)
+        )
+        msg += (
+            f"- Number of extreme values detected: {mask_extreme_values.sum().sum()}\n"
+        )
+        msg += f"   - in detail: {mask_extreme_values.sum().to_dict()}\n"
+        df_wide_raw_od_data_filtered = df_wide_raw_od_data_filtered.mask(
+            mask_extreme_values
+        )
+        masked = masked | mask_extreme_values
+
+    if outlier_method == "ECOD":
+        mask_na = df_wide_raw_od_data_filtered.isna()
+        if not fill_na and mask_na.sum().sum() > 0:
+            st.error(
+                "Found missing values in the data. ECOD outlier detection does not work"
+                " with missing values. Consider setting forward and backward filling "
+                " before applying ECOD outlier detection."
+            )
+            st.stop()
+
+    # outlier detection using IQR on rolling window: sets for center value of window a
+    # true or false (this would be arguing maybe for long data format)
+    # can be used in plot for visualization
+    # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.rolling.html
+    if outlier_method in ("IQR", "ECOD"):
+        kwargs_iqr = {
+            "method": "iqr",
+            "factor": iqr_range_value,
+            "window_size": rolling_window,
+        }
+        kwargs = (
+            kwargs_iqr
+            if outlier_method == "IQR"
+            else {"method": "ecod", "factor": ecod_factor}
+        )
+        _has_missing = df_wide_raw_od_data_filtered.isna().sum().sum() > 0
+        if _has_missing and outlier_method == "ECOD":
+            st.warning(
+                "Found missing values in the data. ECOD outlier detection does not work"
+                " with missing values. I will remove using IQR some outliers and then "
+                " forward and backward fill values "
+                " before applying ECOD outlier detection."
+            )
+        with st.spinner(f"Applying {outlier_method} outlier removal..."):
+            if outlier_method == "ECOD" and _has_missing:
+                mask_outliers = df_wide_raw_od_data_filtered.apply(
+                    gc.preprocessing.detect_outliers,
+                    raw=False,
+                    **kwargs_iqr,
+                ).astype(bool)
+                masked = masked | mask_outliers
+                n_out = mask_outliers.sum().sum()
+                msg += f"- Number of outliers detected (IQR): {n_out}\n"
+                msg += f"   - in detail: {mask_outliers.sum().to_dict()}\n"
+                df_wide_raw_od_data_filtered = df_wide_raw_od_data_filtered.mask(
+                    mask_outliers
+                )
+                df_wide_raw_od_data_filtered = (
+                    df_wide_raw_od_data_filtered.ffill().bfill()
+                )
+            mask_outliers = df_wide_raw_od_data_filtered.apply(
+                gc.preprocessing.detect_outliers,
+                raw=False,
+                **kwargs,
+            ).astype(bool)
+            n_out = mask_outliers.sum().sum()
+            msg += f"- Number of outliers detected ({outlier_method}): {n_out}\n"
+            msg += f"   - in detail: {mask_outliers.sum().to_dict()}\n"
+            masked = masked | mask_outliers
+            df_wide_raw_od_data_filtered = df_wide_raw_od_data_filtered.mask(
+                mask_outliers
+            )
+
     # Handle negative values
     n_negative = (df_wide_raw_od_data_filtered < 0).sum().sum()
     if n_negative > 0:
@@ -697,66 +776,18 @@ if button_pressed:
         msg += f"   - in detail: {mask_negative.sum().to_dict()}\n"
         masked = masked | mask_negative
         del temp, rolling_mean, mask_negative
+
+    masked = masked.fillna(False).astype(bool)
+    st.session_state["masked"] = masked
+    st.session_state["df_wide_raw_od_data_filtered"] = df_wide_raw_od_data_filtered
+
+    # now only apply NA filling for rolling median data?
     if fill_na:
         mask_na = df_wide_raw_od_data_filtered.isna()
         msg += f"- Filling {mask_na.sum().sum():,d} missing OD readings.\n"
         msg += f"   - in detail: {mask_na.sum().to_dict()}\n"
         # ! should I visualize the values differently?
         df_wide_raw_od_data_filtered = df_wide_raw_od_data_filtered.ffill().bfill()
-
-    # remove quantiles
-    if remove_max:
-        mask_extreme_values = (
-            df_wide_raw_od_data_filtered
-            > df_wide_raw_od_data_filtered.quantile(quantile_max)
-        )
-        msg += (
-            f"- Number of extreme values detected: {mask_extreme_values.sum().sum()}\n"
-        )
-        msg += f"   - in detail: {mask_extreme_values.sum().to_dict()}\n"
-        df_wide_raw_od_data_filtered = df_wide_raw_od_data_filtered.mask(
-            mask_extreme_values
-        )
-        masked = masked | mask_extreme_values
-
-    # outlier detection using IQR on rolling window: sets for center value of window a
-    # true or false (this would be arguing maybe for long data format)
-    # can be used in plot for visualization
-    # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.rolling.html
-    print(f"Applying outlier method: {outlier_method}")
-    if outlier_method in ("IQR", "ECOD"):
-        kwargs = (
-            {"method": "iqr", "factor": iqr_range_value, "window_size": rolling_window}
-            if outlier_method == "IQR"
-            else {"method": "ecod", "factor": ecod_factor}
-        )
-        # ! not robust to missing values yet.
-        if (
-            df_wide_raw_od_data_filtered.isna().sum().sum() > 0
-            and outlier_method == "ECOD"
-        ):
-            st.error(
-                "Found missing values in the data. ECOD outlier detection does not work"
-                " with missing values. Consider setting forward and backward filling "
-                " before applying ECOD outlier detection."
-            )
-            st.stop()
-        with st.spinner(f"Applying {outlier_method} outlier removal..."):
-            mask_outliers = df_wide_raw_od_data_filtered.apply(
-                gc.preprocessing.detect_outliers, raw=False, **kwargs
-            ).astype(bool)
-            n_out = mask_outliers.sum().sum()
-            msg += f"- Number of outliers detected ({outlier_method}): {n_out}\n"
-            msg += f"   - in detail: {mask_outliers.sum().to_dict()}\n"
-            masked = masked | mask_outliers
-            df_wide_raw_od_data_filtered = df_wide_raw_od_data_filtered.mask(
-                mask_outliers
-            )
-
-    masked = masked.fillna(False).astype(bool)
-
-    st.session_state["df_wide_raw_od_data_filtered"] = df_wide_raw_od_data_filtered
-    st.session_state["masked"] = masked
 
     df_rolling = (
         df_wide_raw_od_data_filtered.rolling(
@@ -768,16 +799,6 @@ if button_pressed:
         .sort_index()
     )
 
-    if remove_downward_trending:
-        # Remove downward trending data globally on averaged data
-        df_wide_raw_od_data_filtered = df_wide_raw_od_data_filtered.mask(
-            df_wide_raw_od_data_filtered.diff().le(0)
-        )
-        msg += (
-            "- Downward trending data points (negative OD changes) were "
-            "removed globally."
-        )
-
     # ? Should it not be possible to be run twice in a single session?
     if od_adjustment_upload is not None:
         if st.session_state.get("is_df_rolling_adjusted"):
@@ -786,9 +807,17 @@ if button_pressed:
                 "Re-applying will overwrite previous adjustments."
             )
         df_adjustments = pd.read_csv(od_adjustment_upload).convert_dtypes()
-        df_rolling, adjustment_warnings = apply_linear_adjustments(
-            df_rolling, df_adjustments
-        )
+        try:
+            df_rolling, adjustment_warnings = apply_linear_adjustments(
+                df_rolling, df_adjustments
+            )
+        except KeyError as e:
+            error_text = str(e.args[0]) if e.args else str(e)
+            st.error(
+                "Check that the required header and columns are present. "
+                f"{error_text}"
+            )
+            st.stop()
         st.session_state["is_df_rolling_adjusted"] = True
         st.session_state["df_rolling"] = df_rolling
         st.session_state["df_od_adjustment"] = df_adjustments
@@ -812,6 +841,7 @@ if button_pressed:
         # should not happen
         st.error(f"Unknown reactor type: {reactor_type}")
         st.stop()
+
     st.session_state["df_rolling"] = df_rolling
 
     st.session_state["rolling_window"] = int(rolling_window)
@@ -834,9 +864,6 @@ if st.session_state.get("debug_mode", False):
                 "reactors_selected": st.session_state.get("reactors_selected"),
                 "remove_negative": st.session_state.get("remove_negative"),
                 "fill_na": st.session_state.get("fill_na"),
-                "remove_downward_trending": st.session_state.get(
-                    "remove_downward_trending"
-                ),
                 "remove_max": st.session_state.get("remove_max"),
                 "filter_by_iqr_range": st.session_state.get("filter_by_iqr_range"),
                 "quantile_max": st.session_state.get("quantile_max"),
@@ -867,5 +894,10 @@ if st.session_state.get("debug_mode", False):
             st.write(
                 "Rolling OD data:",
                 st.session_state["df_rolling"],
+            )
+        if st.session_state.get("df_od_adjustment") is not None:
+            st.write(
+                "OD adjustment table:",
+                st.session_state["df_od_adjustment"],
             )
 # endregion

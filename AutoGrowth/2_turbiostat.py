@@ -278,7 +278,7 @@ if turbidostat_meta_bytes is not None:
     )
     mask_dilution_events = df_meta["event_name"] == "DilutionEvent"
     if not mask_dilution_events.all():
-        st.info('Showing only rows with "DilutionEvent" in column "event_name".')
+        # only keep dilution events
         df_meta = df_meta.loc[mask_dilution_events]
     # store df_meta which is the turbidostat metadata with timestamps rounded
     # and filtered to dilution events. This is used for peak detection:
@@ -321,6 +321,38 @@ if use_uploaded_peak_times:
         except KeyError:
             st.session_state["show_error"] = True
             st.rerun()
+        with st.expander(
+            "Uploaded metadata (filtered to dilution events)", expanded=False
+        ):
+            st.info('Showing only rows with "DilutionEvent" in column "event_name".')
+            st.write(df_meta)
+        unique_reactors_in_meta = df_meta[col_reactors].unique()
+        _reactors_with_dilution_events = df_rolling.columns.isin(
+            unique_reactors_in_meta
+        )
+        if len(unique_reactors_in_meta) == 0:
+            st.error(
+                "No reactors found in uploaded metadata. Please check the selected "
+                "reactor column and the content of the uploaded file."
+            )
+            st.stop()
+        elif not _reactors_with_dilution_events.all():
+            _missing_reactors = df_rolling.columns[~_reactors_with_dilution_events]
+            st.error(
+                "Dilution Events for reactors not found:"
+                f" {', '.join(_missing_reactors)}.\n\nPlease check the selected "
+                "reactor column and the content of the uploaded file. Exlude "
+                "reactor(s) otherwise on preprocessing tab."
+            )
+            st.page_link(
+                "0_upload_data.py",
+                icon=":material/upload:",
+                label="Upload Data",
+                help="Go to upload data page.",
+            )
+            st.stop()
+
+
 else:
     with st.container(border=True):
         st.subheader("Step 3. Detect Peaks Automatically")
