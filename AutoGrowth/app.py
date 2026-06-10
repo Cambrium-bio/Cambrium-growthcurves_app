@@ -13,7 +13,7 @@ logo_path = Path(__file__).with_name("logo.svg")
 logo_source = (
     str(logo_path)
     if logo_path.exists()
-    else "https://raw.githubusercontent.com/sambra95/TheGrowthAnalysisApp/main/logo.svg"
+    else "https://raw.githubusercontent.com/biosustain/MicroGrowth/main/logo.svg"
 )
 
 # General configurations
@@ -24,7 +24,10 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.logo(logo_source, link="https://github.com/biosustain/growthcurves_app/AutoGrowth")
+st.logo(
+    logo_source,
+    link="https://github.com/biosustain/growthcurves_app/tree/main/AutoGrowth",
+)
 
 # Initialize constants
 DEFAULT_CUSTOM_ID = "pioreactor_experiment"
