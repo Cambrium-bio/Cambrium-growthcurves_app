@@ -9,11 +9,11 @@ from growthcurve_app.styling import green_gradient, green_navbar, red_buttons
 APP_VERSION = Path(__file__).with_name("VERSION").read_text(encoding="utf-8").strip()
 PACKAGE_VERSION = growthcurve_app.__version__
 
-logo_path = Path(__file__).with_name("logo.svg")
+logo_path = Path("../MicroGrowth/logo.svg")
 logo_source = (
     str(logo_path)
     if logo_path.exists()
-    else "https://raw.githubusercontent.com/biosustain/MicroGrowth/main/logo.svg"
+    else "https://raw.githubusercontent.com/biosustain/growthcurves_app/refs/heads/main/MicroGrowth/logo.svg"
 )
 
 # General configurations
