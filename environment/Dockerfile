@@ -1,10 +1,14 @@
-# hash:sha256:62b1b398c26eb1cce4bff47627650828dd742b34fa1d9aadb8f6f091e482e20b
+# hash:sha256:56b4b9ab2c32347178099785849ac5d6e0311a38e611a44b0306996a0ab26c44
 ARG REGISTRY_HOST
 FROM $REGISTRY_HOST/codeocean/miniconda3:25.3.0-3-python3.12.10-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG GIT_ASKPASS
 COPY git-ask-pass /
+
+RUN conda install -y \
+        jupyterlab==4.6.0 \
+    && conda clean -ya
 
 RUN pip3 install -U --no-cache-dir \
     growthcurves==0.9.0 \
