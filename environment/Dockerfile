@@ -1,13 +1,13 @@
-# hash:sha256:db618a8e33088c187ce3a0e2ecd7cdcd84c0e5a31c2a510662e4d393f4f0f5c8
+# hash:sha256:62b1b398c26eb1cce4bff47627650828dd742b34fa1d9aadb8f6f091e482e20b
 ARG REGISTRY_HOST
-FROM $REGISTRY_HOST/codeocean/py-r:python3.10.12-R4.2.3-IRkernel-ubuntu22.04
+FROM $REGISTRY_HOST/codeocean/miniconda3:25.3.0-3-python3.12.10-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG GIT_ASKPASS
 COPY git-ask-pass /
 
 RUN pip3 install -U --no-cache-dir \
-    growthcurves \
+    growthcurves==0.9.0 \
     kaleido==0.2.1 \
     numpy==2.3.5 \
     openpyxl==3.1.5 \
