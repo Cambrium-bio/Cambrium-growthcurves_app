@@ -1,0 +1,68 @@
+{
+	"version": 1,
+	"base_image": "codeocean/py-r:python3.10.12-R4.2.3-IRkernel-ubuntu22.04",
+	"options": {
+		"registry_host_arg": true,
+		"git_ask_pass": true,
+		"mount_secrets": true
+	},
+	"installers": {
+		"pip3": {
+			"packages": [
+				{
+					"name": "growthcurves"
+				},
+				{
+					"name": "kaleido",
+					"version": "0.2.1"
+				},
+				{
+					"name": "numpy",
+					"version": "2.3.5"
+				},
+				{
+					"name": "openpyxl",
+					"version": "3.1.5"
+				},
+				{
+					"name": "pandas",
+					"version": "2.3.3"
+				},
+				{
+					"name": "plotly",
+					"version": "6.3.1"
+				},
+				{
+					"name": "pyod",
+					"version": "2.0.7"
+				},
+				{
+					"name": "scipy",
+					"version": "1.16.3"
+				},
+				{
+					"name": "st-selectable-grid",
+					"version": "1.0.0"
+				},
+				{
+					"name": "streamlit",
+					"version": "1.52.0"
+				},
+				{
+					"name": "streamlit-aggrid",
+					"version": "1.2.1"
+				},
+				{
+					"name": "streamlit-sortables",
+					"version": "0.3.1"
+				},
+				{
+					"name": "xlrd",
+					"version": "2.0.2"
+				}
+			],
+			"options": {},
+			"pre_install_options": {}
+		}
+	}
+}
