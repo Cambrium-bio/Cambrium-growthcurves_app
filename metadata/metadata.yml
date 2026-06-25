@@ -1,2 +1,16 @@
 metadata_version: 1
 name: MicroGrowth
+description: |-
+  Deployment of the MicroGrowth app from DTU Biosustain.
+
+  Publication: https://www.biorxiv.org/content/10.64898/2026.05.23.727125v2
+
+  Manual: https://growthcurves.readthedocs.io/en/latest/
+tags:
+- growth profiling
+- phenotyping
+authors:
+- name: Samuel Bradley
+- name: Henry Webel
+- name: Stefano Donati
+- name: Carlos Acevedo-Rocha
